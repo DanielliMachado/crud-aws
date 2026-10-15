@@ -74,12 +74,13 @@ PAGINA = """
   <div class="card">
     <h2>Produtos cadastrados ({{ produtos|length }})</h2>
     <table>
-      <tr><th>ID</th><th>Nome</th><th>Preço</th><th>Ações</th></tr>
-      {% for p in produtos %}
+      <tr><th>ID</th><th>Nome</th><th>Preço</th><th>Qtd.</th><th>Ações</th></tr>
+        {% for p in produtos %}
       <tr>
         <td>{{ p[0] }}</td>
         <td>{{ p[1] }}</td>
         <td>R$ {{ "%.2f"|format(p[2])|replace(".", ",") }}</td>
+        <td>{{ p[3] }}</td>
         <td class="acoes">
           <a class="btn editar" href="/?editar={{ p[0] }}">Editar</a>
           <form method="post" action="/excluir/{{ p[0] }}" onsubmit="return confirm('Excluir este produto?')">
