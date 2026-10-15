@@ -20,22 +20,80 @@ def criar_tabela():
             preco NUMERIC(10,2) NOT NULL)""")
 
 PAGINA = """
-<!doctype html><html><head><meta charset="utf-8"><title>Produtos</title></head>
-<body style="font-family:sans-serif;max-width:650px;margin:40px auto">
-<h1>Cadastro de Produtos</h1>
-<form method="post" action="{% if item %}/editar/{{ item[0] }}{% else %}/criar{% endif %}">
-  <input name="nome" placeholder="Nome" value="{{ item[1] if item else '' }}" required>
-  <input name="preco" type="number" step="0.01" placeholder="Preço" value="{{ item[2] if item else '' }}" required>
-  <button>{% if item %}Salvar{% else %}Adicionar{% endif %}</button>
-</form>
-<table border="1" cellpadding="6" style="margin-top:20px;border-collapse:collapse">
-<tr><th>ID</th><th>Nome</th><th>Preço</th><th>Ações</th></tr>
-{% for p in produtos %}
-<tr><td>{{ p[0] }}</td><td>{{ p[1] }}</td><td>R$ {{ p[2] }}</td>
-<td><a href="/?editar={{ p[0] }}">Editar</a>
-<form method="post" action="/excluir/{{ p[0] }}" style="display:inline"><button>Excluir</button></form></td></tr>
-{% endfor %}
-</table></body></html>
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cadastro de Produtos</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: "Segoe UI", Arial, sans-serif; background: #f1f4f9; color: #1e293b; }
+  header { background: #232f3e; color: #fff; padding: 22px 16px; text-align: center; }
+  header h1 { margin: 0; font-size: 26px; }
+  header p { margin: 6px 0 0; color: #ff9900; font-size: 14px; }
+  main { max-width: 760px; margin: 28px auto; padding: 0 16px; }
+  .card { background: #fff; border-radius: 12px; padding: 22px; box-shadow: 0 2px 10px rgba(0,0,0,.08); margin-bottom: 22px; }
+  .card h2 { margin: 0 0 14px; font-size: 18px; }
+  form.cadastro { display: flex; gap: 10px; flex-wrap: wrap; }
+  input { flex: 1; min-width: 150px; padding: 11px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; }
+  input:focus { outline: none; border-color: #ff9900; box-shadow: 0 0 0 3px rgba(255,153,0,.2); }
+  button, .btn { padding: 11px 18px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; }
+  .primario { background: #ff9900; color: #232f3e; }
+  .primario:hover { background: #ec8b00; }
+  .editar { background: #e0ecff; color: #1d4ed8; padding: 7px 12px; }
+  .excluir { background: #fee2e2; color: #b91c1c; padding: 7px 12px; }
+  .cancelar { background: #e2e8f0; color: #334155; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 13px; text-transform: uppercase; color: #64748b; padding: 10px; border-bottom: 2px solid #e2e8f0; }
+  td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; }
+  tr:hover td { background: #f8fafc; }
+  .acoes { display: flex; gap: 6px; }
+  .acoes form { margin: 0; }
+  .vazio { text-align: center; color: #94a3b8; padding: 24px; }
+  footer { text-align: center; color: #94a3b8; font-size: 13px; padding-bottom: 24px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Cadastro de Produtos</h1>
+  <p>Aplicação Flask · AWS EC2 + RDS PostgreSQL</p>
+</header>
+<main>
+  <div class="card">
+    <h2>{% if item %}Editar produto #{{ item[0] }}{% else %}Novo produto{% endif %}</h2>
+    <form class="cadastro" method="post" action="{% if item %}/editar/{{ item[0] }}{% else %}/criar{% endif %}">
+      <input name="nome" placeholder="Nome do produto" value="{{ item[1] if item else '' }}" required>
+      <input name="preco" type="number" step="0.01" min="0" placeholder="Preço (R$)" value="{{ item[2] if item else '' }}" required>
+      <button class="primario">{% if item %}Salvar{% else %}Adicionar{% endif %}</button>
+      {% if item %}<a class="btn cancelar" href="/">Cancelar</a>{% endif %}
+    </form>
+  </div>
+  <div class="card">
+    <h2>Produtos cadastrados ({{ produtos|length }})</h2>
+    <table>
+      <tr><th>ID</th><th>Nome</th><th>Preço</th><th>Ações</th></tr>
+      {% for p in produtos %}
+      <tr>
+        <td>{{ p[0] }}</td>
+        <td>{{ p[1] }}</td>
+        <td>R$ {{ "%.2f"|format(p[2])|replace(".", ",") }}</td>
+        <td class="acoes">
+          <a class="btn editar" href="/?editar={{ p[0] }}">Editar</a>
+          <form method="post" action="/excluir/{{ p[0] }}" onsubmit="return confirm('Excluir este produto?')">
+            <button class="excluir">Excluir</button>
+          </form>
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="vazio">Nenhum produto cadastrado ainda.</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+</main>
+<footer>Trabalho 1 · Infraestrutura Cloud AWS · UNESC</footer>
+</body>
+</html>
 """
 
 @app.route("/")
