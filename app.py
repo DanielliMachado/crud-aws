@@ -18,6 +18,7 @@ def criar_tabela():
             id SERIAL PRIMARY KEY,
             nome VARCHAR(100) NOT NULL,
             preco NUMERIC(10,2) NOT NULL)""")
+        cur.execute("ALTER TABLE produtos ADD COLUMN IF NOT EXISTS quantidade INTEGER NOT NULL DEFAULT 0")
 
 PAGINA = """
 <!doctype html>
@@ -60,11 +61,12 @@ PAGINA = """
   <p>Aplicação Flask · AWS EC2 + RDS PostgreSQL</p>
 </header>
 <main>
-  <div class="card">
+ <div class="card">
     <h2>{% if item %}Editar produto #{{ item[0] }}{% else %}Novo produto{% endif %}</h2>
     <form class="cadastro" method="post" action="{% if item %}/editar/{{ item[0] }}{% else %}/criar{% endif %}">
       <input name="nome" placeholder="Nome do produto" value="{{ item[1] if item else '' }}" required>
       <input name="preco" type="number" step="0.01" min="0" placeholder="Preço (R$)" value="{{ item[2] if item else '' }}" required>
+      <input name="quantidade" type="number" step="1" min="0" placeholder="Quantidade" value="{{ item[3] if item else '' }}" required>
       <button class="primario">{% if item %}Salvar{% else %}Adicionar{% endif %}</button>
       {% if item %}<a class="btn cancelar" href="/">Cancelar</a>{% endif %}
     </form>
@@ -99,26 +101,26 @@ PAGINA = """
 @app.route("/")
 def listar():
     with conectar() as con, con.cursor() as cur:
-        cur.execute("SELECT id, nome, preco FROM produtos ORDER BY id")
+        cur.execute("SELECT id, nome, preco, quantidade FROM produtos ORDER BY id")
         produtos = cur.fetchall()
         item = None
         if request.args.get("editar"):
-            cur.execute("SELECT id, nome, preco FROM produtos WHERE id=%s", (request.args["editar"],))
+            cur.execute("SELECT id, nome, preco, quantidade FROM produtos WHERE id=%s", (request.args["editar"],))
             item = cur.fetchone()
     return render_template_string(PAGINA, produtos=produtos, item=item)
 
 @app.route("/criar", methods=["POST"])
 def criar():
     with conectar() as con, con.cursor() as cur:
-        cur.execute("INSERT INTO produtos (nome, preco) VALUES (%s, %s)",
-                    (request.form["nome"], request.form["preco"]))
+           cur.execute("INSERT INTO produtos (nome, preco, quantidade) VALUES (%s, %s, %s)",
+                    (request.form["nome"], request.form["preco"], request.form["quantidade"]))
     return redirect("/")
 
 @app.route("/editar/<int:id>", methods=["POST"])
 def editar(id):
     with conectar() as con, con.cursor() as cur:
-        cur.execute("UPDATE produtos SET nome=%s, preco=%s WHERE id=%s",
-                    (request.form["nome"], request.form["preco"], id))
+          cur.execute("UPDATE produtos SET nome=%s, preco=%s, quantidade=%s WHERE id=%s",
+                    (request.form["nome"], request.form["preco"], request.form["quantidade"], id))
     return redirect("/")
 
 @app.route("/excluir/<int:id>", methods=["POST"])
