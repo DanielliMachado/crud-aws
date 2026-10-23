@@ -1,5 +1,6 @@
 const express = require("express");
 const { pool } = require("../db");
+const { MAX_INT, inteiroPositivo, inteiroNaoNegativo } = require("../validacao");
 
 const router = express.Router();
 
@@ -31,7 +32,7 @@ router.get("/resumo", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   const id = Number(req.params.id);
-  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ erro: "id inválido" });
+  if (!inteiroPositivo(id)) return res.status(400).json({ erro: "id inválido" });
   const { rows } = await pool.query(`${SELECT_VENDAS} WHERE v.id = $1 GROUP BY v.id`, [id]);
   if (!rows.length) return res.status(404).json({ erro: "venda não encontrada" });
   res.json(rows[0]);
@@ -44,12 +45,29 @@ router.post("/", async (req, res) => {
   if (!Array.isArray(itens)) {
     return res.status(400).json({ erro: "envie { itens: [{ produto_id, quantidade }] }" });
   }
-  const validos = itens.filter((i) => i && Number.isInteger(i.quantidade) && i.quantidade > 0);
-  if (!validos.length) {
+  // Qualquer item inválido recusa a venda inteira (nada é descartado em silêncio).
+  // Quantidade 0 é aceita e ignorada; o mesmo produto repetido tem as quantidades somadas.
+  const porProduto = new Map();
+  for (const [posicao, item] of itens.entries()) {
+    if (!item || !inteiroPositivo(item.produto_id) || !inteiroNaoNegativo(item.quantidade)) {
+      return res.status(400).json({
+        erro: `item ${posicao + 1} inválido: produto_id deve ser inteiro positivo e quantidade inteiro entre 0 e ${MAX_INT}`,
+      });
+    }
+    if (item.quantidade > 0) {
+      porProduto.set(item.produto_id, (porProduto.get(item.produto_id) || 0) + item.quantidade);
+    }
+  }
+  if (!porProduto.size) {
     return res.status(400).json({ erro: "informe a quantidade de pelo menos um produto" });
   }
-  if (validos.some((i) => !Number.isInteger(i.produto_id) || i.produto_id <= 0)) {
-    return res.status(400).json({ erro: "produto_id inválido" });
+  // Ordenar por produto_id faz vendas simultâneas travarem as linhas sempre na mesma ordem,
+  // evitando deadlock no PostgreSQL.
+  const validos = [...porProduto]
+    .map(([produto_id, quantidade]) => ({ produto_id, quantidade }))
+    .sort((a, b) => a.produto_id - b.produto_id);
+  if (validos.some((i) => i.quantidade > MAX_INT)) {
+    return res.status(400).json({ erro: `quantidade total de um produto passa de ${MAX_INT}` });
   }
 
   const cliente = await pool.connect();
@@ -57,7 +75,6 @@ router.post("/", async (req, res) => {
     await cliente.query("BEGIN");
     const venda = await cliente.query("INSERT INTO vendas DEFAULT VALUES RETURNING id");
     const vendaId = venda.rows[0].id;
-    let total = 0;
     for (const { produto_id, quantidade } of validos) {
       const atualizado = await cliente.query(
         `UPDATE produtos SET quantidade = quantidade - $1
@@ -78,12 +95,17 @@ router.post("/", async (req, res) => {
          VALUES ($1, $2, $3, $4, $5)`,
         [vendaId, produto_id, nome, quantidade, preco]
       );
-      total += preco * quantidade;
     }
-    await cliente.query("UPDATE vendas SET valor_total = $1 WHERE id = $2", [total.toFixed(2), vendaId]);
-    await cliente.query("COMMIT");
-
+    // Total calculado em NUMERIC no próprio banco, sem arredondamento de ponto flutuante
+    await cliente.query(
+      `UPDATE vendas SET valor_total =
+         (SELECT SUM(quantidade * preco_unitario) FROM itens_venda WHERE venda_id = $1)
+       WHERE id = $1`,
+      [vendaId]
+    );
+    // Lê a venda ainda dentro da transação: depois do COMMIT não sobra nada que possa falhar
     const { rows } = await cliente.query(`${SELECT_VENDAS} WHERE v.id = $1 GROUP BY v.id`, [vendaId]);
+    await cliente.query("COMMIT");
     res.status(201).json(rows[0]);
   } catch (erro) {
     await cliente.query("ROLLBACK").catch(() => {});

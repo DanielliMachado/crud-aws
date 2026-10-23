@@ -33,6 +33,10 @@ app.use((erro, req, res, next) => {
   if (erro.type === "entity.parse.failed") {
     return res.status(400).json({ erro: "JSON inválido no corpo da requisição" });
   }
+  // numeric_value_out_of_range: ex. total da venda acima do que NUMERIC(10,2) comporta
+  if (erro.code === "22003") {
+    return res.status(400).json({ erro: "valor fora do limite permitido pelo banco" });
+  }
   console.error(erro);
   res.status(500).json({ erro: "erro interno no servidor" });
 });

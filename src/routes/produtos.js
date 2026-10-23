@@ -1,5 +1,6 @@
 const express = require("express");
 const { pool } = require("../db");
+const { MAX_INT, MAX_PRECO, inteiroPositivo, inteiroNaoNegativo } = require("../validacao");
 
 const router = express.Router();
 
@@ -8,18 +9,18 @@ function validarProduto(body) {
   if (typeof nome !== "string" || !nome.trim() || nome.length > 100) {
     return "nome é obrigatório (texto de até 100 caracteres)";
   }
-  if (typeof preco !== "number" || !Number.isFinite(preco) || preco < 0) {
-    return "preco é obrigatório (número >= 0)";
+  if (typeof preco !== "number" || !Number.isFinite(preco) || preco < 0 || preco > MAX_PRECO) {
+    return `preco é obrigatório (número entre 0 e ${MAX_PRECO})`;
   }
-  if (!Number.isInteger(quantidade) || quantidade < 0) {
-    return "quantidade é obrigatória (inteiro >= 0)";
+  if (!inteiroNaoNegativo(quantidade)) {
+    return `quantidade é obrigatória (inteiro entre 0 e ${MAX_INT})`;
   }
   return null;
 }
 
 function lerId(req, res) {
   const id = Number(req.params.id);
-  if (!Number.isInteger(id) || id <= 0) {
+  if (!inteiroPositivo(id)) {
     res.status(400).json({ erro: "id inválido" });
     return null;
   }

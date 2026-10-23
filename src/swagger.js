@@ -12,7 +12,7 @@ const parametroId = {
   name: "id",
   in: "path",
   required: true,
-  schema: { type: "integer", minimum: 1 },
+  schema: { type: "integer", minimum: 1, maximum: 2147483647 },
 };
 
 const json = (schema) => ({ "application/json": { schema } });
@@ -101,11 +101,12 @@ module.exports = {
         summary: "Registra uma venda e baixa o estoque",
         description:
           "Tudo acontece numa única transação: se algum produto não tiver estoque suficiente, " +
-          "nada é vendido e a API responde 409. Itens com quantidade 0 são ignorados.",
+          "nada é vendido e a API responde 409. Se algum item for inválido, a venda inteira é recusada com 400. " +
+          "Itens com quantidade 0 são ignorados; o mesmo produto repetido tem as quantidades somadas.",
         requestBody: { required: true, content: json({ $ref: "#/components/schemas/VendaEntrada" }) },
         responses: {
           201: { description: "Venda registrada", content: json({ $ref: "#/components/schemas/Venda" }) },
-          400: respostaErro("Nenhum item válido informado"),
+          400: respostaErro("Item inválido ou nenhum item com quantidade"),
           409: respostaErro("Estoque insuficiente ou produto inexistente"),
         },
       },
@@ -148,8 +149,8 @@ module.exports = {
         required: ["nome", "preco", "quantidade"],
         properties: {
           nome: { type: "string", maxLength: 100, example: "Teclado" },
-          preco: { type: "number", minimum: 0, example: 129.9 },
-          quantidade: { type: "integer", minimum: 0, example: 10 },
+          preco: { type: "number", minimum: 0, maximum: 99999999.99, example: 129.9 },
+          quantidade: { type: "integer", minimum: 0, maximum: 2147483647, example: 10 },
         },
       },
       Produto: {
@@ -171,8 +172,8 @@ module.exports = {
               type: "object",
               required: ["produto_id", "quantidade"],
               properties: {
-                produto_id: { type: "integer", example: 1 },
-                quantidade: { type: "integer", minimum: 1, example: 2 },
+                produto_id: { type: "integer", minimum: 1, maximum: 2147483647, example: 1 },
+                quantidade: { type: "integer", minimum: 0, maximum: 2147483647, example: 2 },
               },
             },
           },
