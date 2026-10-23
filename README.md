@@ -1,8 +1,8 @@
 # crud-aws
 
-API REST de produtos e vendas em **Node.js (Express) + PostgreSQL**, com documentação **Swagger**, e deploy na AWS (EC2 + RDS PostgreSQL + Nginx) — Trabalho 1 de Infraestrutura Cloud, UNESC.
+API REST de produtos em **Node.js (Express) + PostgreSQL**, com documentação **Swagger**, e deploy na AWS (EC2 + RDS PostgreSQL + Nginx) — Trabalho 1 de Infraestrutura Cloud, UNESC.
 
-> A versão 1 era um app Flask com telas HTML. A versão 2 mantém **as mesmas tabelas e a mesma lógica** (cadastro de produtos, vendas com baixa de estoque em transação), mas agora é só backend: endpoints HTTP livres (sem autenticação) e um Swagger para testá-los.
+> A versão 1 era um app Flask com telas HTML. A versão 2 mantém **a mesma tabela de produtos e os mesmos dados**, mas agora é só backend: endpoints HTTP livres (sem autenticação) e um Swagger para testá-los.
 
 ## Endpoints
 
@@ -16,18 +16,12 @@ API REST de produtos e vendas em **Node.js (Express) + PostgreSQL**, com documen
 | POST | `/produtos` | Cria produto `{ nome, preco, quantidade }` |
 | PUT | `/produtos/{id}` | Atualiza produto `{ nome, preco, quantidade }` |
 | DELETE | `/produtos/{id}` | Exclui produto |
-| GET | `/vendas` | Histórico de vendas com itens |
-| GET | `/vendas/resumo` | Quantidade de vendas e total vendido |
-| GET | `/vendas/{id}` | Busca uma venda |
-| POST | `/vendas` | Registra venda `{ itens: [{ produto_id, quantidade }] }` — tudo ou nada; 409 se faltar estoque |
 
-## Tabelas
+## Tabela
 
-Criadas automaticamente ao iniciar (`CREATE TABLE IF NOT EXISTS`), idênticas às da versão Flask — um banco já existente é reaproveitado sem perder dados.
+Criada automaticamente ao iniciar (`CREATE TABLE IF NOT EXISTS`), igual à da versão Flask — um banco já existente é reaproveitado sem perder dados.
 
 - `produtos (id, nome, preco, quantidade)`
-- `vendas (id, data, valor_total)`
-- `itens_venda (id, venda_id → vendas, produto_id → produtos, produto_nome, quantidade, preco_unitario)`
 
 ## Rodando localmente
 

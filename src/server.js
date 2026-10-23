@@ -5,7 +5,6 @@ const swaggerUi = require("swagger-ui-express");
 const { pool, criarTabelas } = require("./db");
 const swaggerSpec = require("./swagger");
 const produtos = require("./routes/produtos");
-const vendas = require("./routes/vendas");
 
 const app = express();
 app.use(express.json());
@@ -24,7 +23,6 @@ app.get("/health", async (req, res) => {
 });
 
 app.use("/produtos", produtos);
-app.use("/vendas", vendas);
 
 app.use((req, res) => res.status(404).json({ erro: "rota não encontrada" }));
 
@@ -33,7 +31,7 @@ app.use((erro, req, res, next) => {
   if (erro.type === "entity.parse.failed") {
     return res.status(400).json({ erro: "JSON inválido no corpo da requisição" });
   }
-  // numeric_value_out_of_range: ex. total da venda acima do que NUMERIC(10,2) comporta
+  // numeric_value_out_of_range: valor acima do que a coluna do banco comporta
   if (erro.code === "22003") {
     return res.status(400).json({ erro: "valor fora do limite permitido pelo banco" });
   }

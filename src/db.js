@@ -19,24 +19,13 @@ const pool = new Pool({
   ssl: usarSsl ? { rejectUnauthorized: false } : false,
 });
 
-// Mesmas tabelas do app Flask original (idempotente: pode rodar com o banco já existente)
+// Mesma tabela de produtos do app Flask original (idempotente: pode rodar com o banco já existente)
 async function criarTabelas() {
   await pool.query(`CREATE TABLE IF NOT EXISTS produtos (
     id SERIAL PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
     preco NUMERIC(10,2) NOT NULL)`);
   await pool.query("ALTER TABLE produtos ADD COLUMN IF NOT EXISTS quantidade INTEGER NOT NULL DEFAULT 0");
-  await pool.query(`CREATE TABLE IF NOT EXISTS vendas (
-    id SERIAL PRIMARY KEY,
-    data TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    valor_total NUMERIC(10,2) NOT NULL DEFAULT 0)`);
-  await pool.query(`CREATE TABLE IF NOT EXISTS itens_venda (
-    id SERIAL PRIMARY KEY,
-    venda_id INTEGER NOT NULL REFERENCES vendas(id) ON DELETE CASCADE,
-    produto_id INTEGER REFERENCES produtos(id) ON DELETE SET NULL,
-    produto_nome VARCHAR(100) NOT NULL,
-    quantidade INTEGER NOT NULL,
-    preco_unitario NUMERIC(10,2) NOT NULL)`);
 }
 
 module.exports = { pool, criarTabelas };
