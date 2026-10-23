@@ -1,0 +1,13 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev",
+      "runtimeExecutable": "C:\\Users\\dani_\\AppData\\Local\\Temp\\crud-dev\\node.exe",
+      "runtimeArgs": [
+        "C:\\Users\\dani_\\AppData\\Local\\Temp\\crud-dev\\pglite\\dev.mjs"
+      ],
+      "port": 3000
+    }
+  ]
+}
